@@ -23,7 +23,6 @@
       pointer-events: none;
       z-index: 0;
     }
-    /* Botón invisible que cubre toda la pantalla */
     .pantalla-inicio {
       position: fixed;
       inset: 0;
@@ -135,13 +134,12 @@
 </head>
 <body>
   <canvas id="canvas"></canvas>
-
-  <!-- BOTÓN real que cubre toda la pantalla → el móvil sí acepta el gesto -->
+ 
   <button class="pantalla-inicio" id="pantalla-inicio" onclick="iniciar()">
     <div class="pulso"></div>
     <p class="texto-inicio">toca para comenzar</p>
   </button>
-
+ 
   <div class="contenido" id="contenido">
     <svg class="trifuerza" id="trifuerza" width="220" height="200"
          viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
@@ -153,21 +151,21 @@
       continuar
     </button>
   </div>
-
+ 
   <audio id="audio-zelda" src="zelda.mp3" preload="auto"></audio>
-
+ 
   <script>
     // ── ESTRELLAS ──
     const canvas = document.getElementById('canvas');
     const ctx    = canvas.getContext('2d');
-
+ 
     function resize() {
       canvas.width  = window.innerWidth;
       canvas.height = window.innerHeight;
     }
-
+ 
     let estrellas = [];
-
+ 
     function initEstrellas() {
       estrellas = [];
       for (let i = 0; i < 180; i++) {
@@ -181,7 +179,7 @@
         });
       }
     }
-
+ 
     function dibujar() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       estrellas.forEach(s => {
@@ -194,33 +192,34 @@
       });
       requestAnimationFrame(dibujar);
     }
-
+ 
     resize();
     initEstrellas();
     dibujar();
     window.addEventListener('resize', () => { resize(); initEstrellas(); });
-
+ 
     // ── LÓGICA PRINCIPAL ──
     const pantalla  = document.getElementById('pantalla-inicio');
     const contenido = document.getElementById('contenido');
     const trifuerza = document.getElementById('trifuerza');
     const btnCont   = document.getElementById('btn-continuar');
     const audio     = document.getElementById('audio-zelda');
-
+ 
     let iniciado = false;
-
+ 
     function iniciar() {
       if (iniciado) return;
       iniciado = true;
-
+ 
       pantalla.classList.add('oculta');
-
-      // Al ser un <button> real, el móvil sí permite el audio
+ 
+      // Forzar recarga y reproducción
+      audio.load();
       audio.play().catch(() => {});
-
+ 
       setTimeout(() => contenido.classList.add('visible'), 800);
       setTimeout(() => trifuerza.classList.add('visible'), 1200);
-
+ 
       let botonMostrado = false;
       function mostrarBoton() {
         if (botonMostrado) return;
@@ -228,11 +227,11 @@
         trifuerza.classList.add('brillando');
         setTimeout(() => btnCont.classList.add('visible'), 400);
       }
-
+ 
       audio.addEventListener('ended', mostrarBoton, { once: true });
-      setTimeout(mostrarBoton, 5000); // fallback por si el audio falla
+      setTimeout(mostrarBoton, 5000);
     }
-
+ 
     // ── IR A INDEX ──
     function continuar() {
       document.body.classList.add('saliendo');
