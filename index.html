@@ -8,6 +8,14 @@
   <link href="https://fonts.googleapis.com/css2?family=UnifrakturMaguntia&family=Cinzel:wght@400;700&family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
 </head>
 <body>
+  
+<script>
+  if (!sessionStorage.getItem('introVista')) {
+    sessionStorage.setItem('introVista', 'true');
+    window.location.href = 'intro.html';
+  }
+</script>
+
 
   <!-- ===== FONDO ===== -->
   <div class="fondo-collage" aria-hidden="true">
