@@ -7,7 +7,6 @@
   <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-
     body {
       background: #000;
       min-height: 100vh;
@@ -18,7 +17,6 @@
       overflow: hidden;
       cursor: pointer;
     }
-
     canvas {
       position: fixed;
       top: 0; left: 0;
@@ -26,8 +24,6 @@
       pointer-events: none;
       z-index: 0;
     }
-
-    /* PANTALLA DE CLICK INICIAL */
     .pantalla-inicio {
       position: fixed;
       inset: 0;
@@ -40,12 +36,10 @@
       background: #000;
       transition: opacity 1s ease;
     }
-
     .pantalla-inicio.oculta {
       opacity: 0;
       pointer-events: none;
     }
-
     .pulso {
       width: 60px;
       height: 60px;
@@ -53,12 +47,10 @@
       border-radius: 50%;
       animation: pulsar 2s ease-in-out infinite;
     }
-
     @keyframes pulsar {
       0%, 100% { transform: scale(1); opacity: 0.5; }
       50%       { transform: scale(1.2); opacity: 1; }
     }
-
     .texto-inicio {
       font-family: 'IM Fell English', serif;
       font-style: italic;
@@ -67,13 +59,10 @@
       letter-spacing: 5px;
       animation: parpadeo 2s ease-in-out infinite;
     }
-
     @keyframes parpadeo {
       0%, 100% { opacity: 0.4; }
       50%       { opacity: 1; }
     }
-
-    /* CONTENIDO PRINCIPAL */
     .contenido {
       position: relative;
       z-index: 2;
@@ -84,34 +73,26 @@
       opacity: 0;
       transition: opacity 1s ease;
     }
-
     .contenido.visible {
       opacity: 1;
     }
-
-    /* TRIFUERZA */
     .trifuerza {
       opacity: 0;
       transform: scale(0.7);
       transition: opacity 2s ease, transform 2s ease;
       filter: drop-shadow(0 0 30px rgba(212,179,80,0.5));
     }
-
     .trifuerza.visible {
       opacity: 1;
       transform: scale(1);
     }
-
     .trifuerza.brillando polygon {
       animation: brillo 2s ease-in-out infinite;
     }
-
     @keyframes brillo {
       0%, 100% { opacity: 1; }
       50%       { opacity: 0.7; }
     }
-
-    /* BOTÓN CONTINUAR */
     .btn-continuar {
       font-family: 'IM Fell English', serif;
       font-style: italic;
@@ -128,39 +109,32 @@
                   border-color 0.4s ease, box-shadow 0.4s ease;
       text-transform: lowercase;
     }
-
     .btn-continuar.visible {
       opacity: 1;
       transform: translateY(0);
     }
-
     .btn-continuar:hover {
       letter-spacing: 8px;
       border-color: rgba(212,179,80,0.8);
       box-shadow: 0 0 24px rgba(212,179,80,0.2);
       background: rgba(212,179,80,0.05);
     }
-
     body.saliendo {
       animation: fadeOut 1s ease forwards;
     }
-
     @keyframes fadeOut {
       to { opacity: 0; }
     }
   </style>
 </head>
 <body>
-
   <canvas id="canvas"></canvas>
 
-  <!-- PANTALLA INICIAL: click para empezar -->
   <div class="pantalla-inicio" id="pantalla-inicio">
     <div class="pulso"></div>
     <p class="texto-inicio">toca para comenzar</p>
   </div>
 
-  <!-- CONTENIDO: trifuerza + botón -->
   <div class="contenido" id="contenido">
     <svg class="trifuerza" id="trifuerza" width="220" height="200"
          viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
@@ -168,13 +142,13 @@
       <polygon points="55,95 100,175 10,175"  fill="#d4b350"/>
       <polygon points="145,95 190,175 100,175" fill="#d4b350"/>
     </svg>
-
     <button class="btn-continuar" id="btn-continuar" onclick="continuar()">
       continuar
     </button>
   </div>
 
-  <audio id="audio-zelda" src="zelda.mp3"></audio>
+  <!-- preload="auto" para que cargue el audio antes de que el usuario toque -->
+  <audio id="audio-zelda" src="zelda.mp3" preload="auto"></audio>
 
   <script>
     // ── ESTRELLAS ──
@@ -221,55 +195,53 @@
     window.addEventListener('resize', () => { resize(); initEstrellas(); });
 
     // ── LÓGICA PRINCIPAL ──
-    const pantalla   = document.getElementById('pantalla-inicio');
-    const contenido  = document.getElementById('contenido');
-    const trifuerza  = document.getElementById('trifuerza');
-    const btnCont    = document.getElementById('btn-continuar');
-    const audio      = document.getElementById('audio-zelda');
+    const pantalla  = document.getElementById('pantalla-inicio');
+    const contenido = document.getElementById('contenido');
+    const trifuerza = document.getElementById('trifuerza');
+    const btnCont   = document.getElementById('btn-continuar');
+    const audio     = document.getElementById('audio-zelda');
 
     let iniciado = false;
+
+    function mostrarBoton() {
+      trifuerza.classList.add('brillando');
+      setTimeout(() => btnCont.classList.add('visible'), 400);
+    }
 
     function iniciar() {
       if (iniciado) return;
       iniciado = true;
 
-      // 1. Ocultar pantalla de inicio
       pantalla.classList.add('oculta');
 
-      // 2. Reproducir audio
-      audio.play().catch(e => console.log('Audio error:', e));
+      // Intentar reproducir; si falla en móvil, igual mostramos la animación
+      const promesa = audio.play();
+      if (promesa !== undefined) {
+        promesa
+          .then(() => {
+            // Audio OK — esperar a que termine para mostrar botón
+            audio.addEventListener('ended', mostrarBoton, { once: true });
+          })
+          .catch(() => {
+            // Audio bloqueado — mostrar botón después de la animación igual
+            setTimeout(mostrarBoton, 4000);
+          });
+      } else {
+        audio.addEventListener('ended', mostrarBoton, { once: true });
+      }
 
-      // 3. Mostrar contenedor
-      setTimeout(() => {
-        contenido.classList.add('visible');
-      }, 800);
-
-      // 4. Aparecer trifuerza
-      setTimeout(() => {
-        trifuerza.classList.add('visible');
-      }, 1200);
-
-      // 5. Cuando termine el audio → mostrar botón y brillo
-      audio.addEventListener('ended', () => {
-        trifuerza.classList.add('brillando');
-        setTimeout(() => {
-          btnCont.classList.add('visible');
-        }, 400);
-      });
+      setTimeout(() => contenido.classList.add('visible'), 800);
+      setTimeout(() => trifuerza.classList.add('visible'), 1200);
     }
 
-    // Activar con click o toque
     document.addEventListener('click',      iniciar, { once: true });
     document.addEventListener('touchstart', iniciar, { once: true });
 
     // ── IR A INDEX ──
     function continuar() {
       document.body.classList.add('saliendo');
-      setTimeout(() => {
-        window.location.href = 'index.html';
-      }, 1000);
+      setTimeout(() => { window.location.href = 'index.html'; }, 1000);
     }
   </script>
-
 </body>
 </html>
