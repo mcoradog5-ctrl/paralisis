@@ -15,7 +15,6 @@
       align-items: center;
       justify-content: center;
       overflow: hidden;
-      cursor: pointer;
     }
     canvas {
       position: fixed;
@@ -24,6 +23,7 @@
       pointer-events: none;
       z-index: 0;
     }
+    /* Botón invisible que cubre toda la pantalla */
     .pantalla-inicio {
       position: fixed;
       inset: 0;
@@ -35,6 +35,10 @@
       gap: 20px;
       background: #000;
       transition: opacity 1s ease;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
     }
     .pantalla-inicio.oculta {
       opacity: 0;
@@ -46,6 +50,7 @@
       border: 1px solid rgba(212,179,80,0.5);
       border-radius: 50%;
       animation: pulsar 2s ease-in-out infinite;
+      pointer-events: none;
     }
     @keyframes pulsar {
       0%, 100% { transform: scale(1); opacity: 0.5; }
@@ -58,6 +63,7 @@
       color: rgba(212,179,80,0.6);
       letter-spacing: 5px;
       animation: parpadeo 2s ease-in-out infinite;
+      pointer-events: none;
     }
     @keyframes parpadeo {
       0%, 100% { opacity: 0.4; }
@@ -130,10 +136,11 @@
 <body>
   <canvas id="canvas"></canvas>
 
-  <div class="pantalla-inicio" id="pantalla-inicio">
+  <!-- BOTÓN real que cubre toda la pantalla → el móvil sí acepta el gesto -->
+  <button class="pantalla-inicio" id="pantalla-inicio" onclick="iniciar()">
     <div class="pulso"></div>
     <p class="texto-inicio">toca para comenzar</p>
-  </div>
+  </button>
 
   <div class="contenido" id="contenido">
     <svg class="trifuerza" id="trifuerza" width="220" height="200"
@@ -208,14 +215,12 @@
 
       pantalla.classList.add('oculta');
 
-      // Intentar reproducir audio (puede fallar en móvil, no importa)
+      // Al ser un <button> real, el móvil sí permite el audio
       audio.play().catch(() => {});
 
-      // Mostrar animación
       setTimeout(() => contenido.classList.add('visible'), 800);
       setTimeout(() => trifuerza.classList.add('visible'), 1200);
 
-      // Botón aparece siempre: cuando termina el audio O a los 5 segundos
       let botonMostrado = false;
       function mostrarBoton() {
         if (botonMostrado) return;
@@ -225,11 +230,8 @@
       }
 
       audio.addEventListener('ended', mostrarBoton, { once: true });
-      setTimeout(mostrarBoton, 5000); // fallback garantizado
+      setTimeout(mostrarBoton, 5000); // fallback por si el audio falla
     }
-
-    document.addEventListener('click',      iniciar, { once: true });
-    document.addEventListener('touchstart', iniciar, { once: true });
 
     // ── IR A INDEX ──
     function continuar() {
