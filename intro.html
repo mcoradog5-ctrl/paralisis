@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Parálisis</title>
+  <link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@1&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      background: #000;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      cursor: pointer;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      width: 100%; height: 100%;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* PANTALLA DE CLICK INICIAL */
+    .pantalla-inicio {
+      position: fixed;
+      inset: 0;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      background: #000;
+      transition: opacity 1s ease;
+    }
+
+    .pantalla-inicio.oculta {
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .pulso {
+      width: 60px;
+      height: 60px;
+      border: 1px solid rgba(212,179,80,0.5);
+      border-radius: 50%;
+      animation: pulsar 2s ease-in-out infinite;
+    }
+
+    @keyframes pulsar {
+      0%, 100% { transform: scale(1); opacity: 0.5; }
+      50%       { transform: scale(1.2); opacity: 1; }
+    }
+
+    .texto-inicio {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 14px;
+      color: rgba(212,179,80,0.6);
+      letter-spacing: 5px;
+      animation: parpadeo 2s ease-in-out infinite;
+    }
+
+    @keyframes parpadeo {
+      0%, 100% { opacity: 0.4; }
+      50%       { opacity: 1; }
+    }
+
+    /* CONTENIDO PRINCIPAL */
+    .contenido {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 50px;
+      opacity: 0;
+      transition: opacity 1s ease;
+    }
+
+    .contenido.visible {
+      opacity: 1;
+    }
+
+    /* TRIFUERZA */
+    .trifuerza {
+      opacity: 0;
+      transform: scale(0.7);
+      transition: opacity 2s ease, transform 2s ease;
+      filter: drop-shadow(0 0 30px rgba(212,179,80,0.5));
+    }
+
+    .trifuerza.visible {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    .trifuerza.brillando polygon {
+      animation: brillo 2s ease-in-out infinite;
+    }
+
+    @keyframes brillo {
+      0%, 100% { opacity: 1; }
+      50%       { opacity: 0.7; }
+    }
+
+    /* BOTÓN CONTINUAR */
+    .btn-continuar {
+      font-family: 'IM Fell English', serif;
+      font-style: italic;
+      font-size: 16px;
+      color: #d4b350;
+      letter-spacing: 5px;
+      border: 1px solid rgba(212,179,80,0.35);
+      padding: 14px 40px;
+      background: transparent;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 1.5s ease, transform 1.5s ease, letter-spacing 0.4s ease,
+                  border-color 0.4s ease, box-shadow 0.4s ease;
+      text-transform: lowercase;
+    }
+
+    .btn-continuar.visible {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .btn-continuar:hover {
+      letter-spacing: 8px;
+      border-color: rgba(212,179,80,0.8);
+      box-shadow: 0 0 24px rgba(212,179,80,0.2);
+      background: rgba(212,179,80,0.05);
+    }
+
+    body.saliendo {
+      animation: fadeOut 1s ease forwards;
+    }
+
+    @keyframes fadeOut {
+      to { opacity: 0; }
+    }
+  </style>
+</head>
+<body>
+
+  <canvas id="canvas"></canvas>
+
+  <!-- PANTALLA INICIAL: click para empezar -->
+  <div class="pantalla-inicio" id="pantalla-inicio">
+    <div class="pulso"></div>
+    <p class="texto-inicio">toca para comenzar</p>
+  </div>
+
+  <!-- CONTENIDO: trifuerza + botón -->
+  <div class="contenido" id="contenido">
+    <svg class="trifuerza" id="trifuerza" width="220" height="200"
+         viewBox="0 0 200 180" xmlns="http://www.w3.org/2000/svg">
+      <polygon points="100,10 145,90 55,90"  fill="#d4b350"/>
+      <polygon points="55,95 100,175 10,175"  fill="#d4b350"/>
+      <polygon points="145,95 190,175 100,175" fill="#d4b350"/>
+    </svg>
+
+    <button class="btn-continuar" id="btn-continuar" onclick="continuar()">
+      continuar
+    </button>
+  </div>
+
+  <audio id="audio-zelda" src="zelda.mp3"></audio>
+
+  <script>
+    // ── ESTRELLAS ──
+    const canvas = document.getElementById('canvas');
+    const ctx    = canvas.getContext('2d');
+
+    function resize() {
+      canvas.width  = window.innerWidth;
+      canvas.height = window.innerHeight;
+    }
+
+    let estrellas = [];
+
+    function initEstrellas() {
+      estrellas = [];
+      for (let i = 0; i < 180; i++) {
+        estrellas.push({
+          x:  Math.random() * canvas.width,
+          y:  Math.random() * canvas.height,
+          r:  Math.random() * 1.3 + 0.2,
+          op: Math.random() * 0.7 + 0.2,
+          t:  Math.random() * Math.PI * 2,
+          ts: Math.random() * 0.012 + 0.004
+        });
+      }
+    }
+
+    function dibujar() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      estrellas.forEach(s => {
+        s.t += s.ts;
+        const alpha = s.op * (0.5 + 0.5 * Math.sin(s.t));
+        ctx.beginPath();
+        ctx.arc(s.x, s.y, s.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(212,179,80,${alpha})`;
+        ctx.fill();
+      });
+      requestAnimationFrame(dibujar);
+    }
+
+    resize();
+    initEstrellas();
+    dibujar();
+    window.addEventListener('resize', () => { resize(); initEstrellas(); });
+
+    // ── LÓGICA PRINCIPAL ──
+    const pantalla   = document.getElementById('pantalla-inicio');
+    const contenido  = document.getElementById('contenido');
+    const trifuerza  = document.getElementById('trifuerza');
+    const btnCont    = document.getElementById('btn-continuar');
+    const audio      = document.getElementById('audio-zelda');
+
+    let iniciado = false;
+
+    function iniciar() {
+      if (iniciado) return;
+      iniciado = true;
+
+      // 1. Ocultar pantalla de inicio
+      pantalla.classList.add('oculta');
+
+      // 2. Reproducir audio
+      audio.play().catch(e => console.log('Audio error:', e));
+
+      // 3. Mostrar contenedor
+      setTimeout(() => {
+        contenido.classList.add('visible');
+      }, 800);
+
+      // 4. Aparecer trifuerza
+      setTimeout(() => {
+        trifuerza.classList.add('visible');
+      }, 1200);
+
+      // 5. Cuando termine el audio → mostrar botón y brillo
+      audio.addEventListener('ended', () => {
+        trifuerza.classList.add('brillando');
+        setTimeout(() => {
+          btnCont.classList.add('visible');
+        }, 400);
+      });
+    }
+
+    // Activar con click o toque
+    document.addEventListener('click',      iniciar, { once: true });
+    document.addEventListener('touchstart', iniciar, { once: true });
+
+    // ── IR A INDEX ──
+    function continuar() {
+      document.body.classList.add('saliendo');
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1000);
+    }
+  </script>
+
+</body>
+</html>
