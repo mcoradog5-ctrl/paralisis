@@ -147,7 +147,6 @@
     </button>
   </div>
 
-  <!-- preload="auto" para que cargue el audio antes de que el usuario toque -->
   <audio id="audio-zelda" src="zelda.mp3" preload="auto"></audio>
 
   <script>
@@ -203,35 +202,30 @@
 
     let iniciado = false;
 
-    function mostrarBoton() {
-      trifuerza.classList.add('brillando');
-      setTimeout(() => btnCont.classList.add('visible'), 400);
-    }
-
     function iniciar() {
       if (iniciado) return;
       iniciado = true;
 
       pantalla.classList.add('oculta');
 
-      // Intentar reproducir; si falla en móvil, igual mostramos la animación
-      const promesa = audio.play();
-      if (promesa !== undefined) {
-        promesa
-          .then(() => {
-            // Audio OK — esperar a que termine para mostrar botón
-            audio.addEventListener('ended', mostrarBoton, { once: true });
-          })
-          .catch(() => {
-            // Audio bloqueado — mostrar botón después de la animación igual
-            setTimeout(mostrarBoton, 4000);
-          });
-      } else {
-        audio.addEventListener('ended', mostrarBoton, { once: true });
-      }
+      // Intentar reproducir audio (puede fallar en móvil, no importa)
+      audio.play().catch(() => {});
 
+      // Mostrar animación
       setTimeout(() => contenido.classList.add('visible'), 800);
       setTimeout(() => trifuerza.classList.add('visible'), 1200);
+
+      // Botón aparece siempre: cuando termina el audio O a los 5 segundos
+      let botonMostrado = false;
+      function mostrarBoton() {
+        if (botonMostrado) return;
+        botonMostrado = true;
+        trifuerza.classList.add('brillando');
+        setTimeout(() => btnCont.classList.add('visible'), 400);
+      }
+
+      audio.addEventListener('ended', mostrarBoton, { once: true });
+      setTimeout(mostrarBoton, 5000); // fallback garantizado
     }
 
     document.addEventListener('click',      iniciar, { once: true });
